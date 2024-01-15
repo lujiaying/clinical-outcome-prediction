@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--mimic_dir', required=True)
     parser.add_argument('--save_dir', required=True)
-    parser.add_argument('--admission_only', default=False)
+    parser.add_argument('--admission_only', type=bool, default=False)
     parser.add_argument('--seed', default=123, type=int)
 
     return parser.parse_args()
@@ -23,16 +23,20 @@ def filter_notes(notes_df: pd.DataFrame, admissions_df: pd.DataFrame, admission_
     # filter out newborns
     adm_grownups = admissions_df[admissions_df.ADMISSION_TYPE != "NEWBORN"]
     notes_df = notes_df[notes_df.HADM_ID.isin(adm_grownups.HADM_ID)]
+    print(f'After filter out newborns, left {len(notes_df)} notes.')
 
     # remove notes with no TEXT or HADM_ID
     notes_df = notes_df.dropna(subset=["TEXT", "HADM_ID"])
+    print(f'After drop rows without text or admission id, left {len(notes_df)} notes.')
 
     # filter discharge summaries
     notes_df = notes_df[notes_df.CATEGORY == "Discharge summary"]
+    print(f'After filter discharge summaries, left {len(notes_df)} notes.')
 
     # remove duplicates and keep the later ones
     notes_df = notes_df.sort_values(by=["CHARTDATE"])
     notes_df = notes_df.drop_duplicates(subset=["TEXT"], keep="last")
+    print(f'After drop duplicates, left {len(notes_df)} notes.')
 
     # combine text of same admissions (those are usually addendums)
     combined_adm_texts = notes_df.groupby('HADM_ID')['TEXT'].apply(lambda x: '\n\n'.join(x)).reset_index()
@@ -46,10 +50,12 @@ def filter_notes(notes_df: pd.DataFrame, admissions_df: pd.DataFrame, admission_
 
     # remove entries without admission id, subject id or text
     notes_df = notes_df.dropna(subset=["HADM_ID", "SUBJECT_ID", "TEXT"])
+    print(f'removed rows without admission id, subject id or text, left {len(notes_df)} notes.')
 
     if admission_text_only:
         # reduce text to admission-only text
         notes_df = filter_admission_text(notes_df)
+    print(f'return of def filter_notes: {len(notes_df)} notes.')
 
     return notes_df
 
@@ -71,21 +77,28 @@ def filter_admission_text(notes_df) -> pd.DataFrame:
 
     # replace linebreak indicators
     notes_df['TEXT'] = notes_df['TEXT'].str.replace(r"\n", r"\\n")
+    #print(f'{notes_df.iloc[2]["TEXT"]=}')
 
     # extract each section by regex
     for key in admission_sections.keys():
         section = admission_sections[key]
-        notes_df[key] = notes_df.TEXT.str.extract(r'(?i){}(.+?)\\n\\n[^(\\|\d|\.)]+?:'
+        #print(f'{section=}')
+        #notes_df[key] = notes_df.TEXT.str.extract(r'(?i){}(.+?)\\n\\n[^(\\|\d|\.)]+?:'
+        #                                          .format(section))
+        notes_df[key] = notes_df.TEXT.str.extract(r'(?i){}\n(.+?)\n\n[^(\\|\d|\.)]+?:'
                                                   .format(section))
-
+        #print(f'{notes_df[key].head(5)=}')
         notes_df[key] = notes_df[key].str.replace(r'\\n', r' ')
         notes_df[key] = notes_df[key].str.strip()
         notes_df[key] = notes_df[key].fillna("")
         notes_df[notes_df[key].str.startswith("[]")][key] = ""
 
+    print(f'Before filter notes with missing main information, left {len(notes_df)} notes.')
+    #print(notes_df.head(15)[["CHIEF_COMPLAINT", "PRESENT_ILLNESS", "MEDICAL_HISTORY"]])
     # filter notes with missing main information
     notes_df = notes_df[(notes_df.CHIEF_COMPLAINT != "") | (notes_df.PRESENT_ILLNESS != "") |
                         (notes_df.MEDICAL_HISTORY != "")]
+    print(f'After filter notes with missing main information, left {len(notes_df)} notes.')
 
     # add section headers and combine into TEXT_ADMISSION
     notes_df = notes_df.assign(TEXT="CHIEF COMPLAINT: " + notes_df.CHIEF_COMPLAINT.astype(str)
@@ -103,6 +116,7 @@ def filter_admission_text(notes_df) -> pd.DataFrame:
                                     "FAMILY HISTORY: " + notes_df.FAMILY_HISTORY.astype(str)
                                     + '\n\n' +
                                     "SOCIAL HISTORY: " + notes_df.SOCIAL_HISTORY.astype(str))
+    print(f'Return def filter_admission_text {len(notes_df)} notes.')
 
     return notes_df
 
