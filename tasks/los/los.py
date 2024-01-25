@@ -36,18 +36,18 @@ def los_mimic(mimic_dir: str, save_dir: str, seed: int, admission_only: bool):
     # Creation of Label
     """
         <= 3: 0
-        > 3 & <= 7: 1
-        > 7 & <= 14: 2
-        >14 & <= 21: 3
-        >21: 4
+        > 3 & <= 5: 1
+        > 5 & <= 7: 2
+        > 7 & <= 14: 3
+        >14: 4
     """
     mimic_admissions.loc[mimic_admissions['LOS_days'] <= 3, 'LOS_label'] = 0
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 3) & (
-            mimic_admissions['LOS_days'] <= 7), 'LOS_label'] = 1
+            mimic_admissions['LOS_days'] <= 5), 'LOS_label'] = 1
+    mimic_admissions.loc[(mimic_admissions['LOS_days'] > 5) & (
+            mimic_admissions['LOS_days'] <= 7), 'LOS_label'] = 2
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 7) & (
-            mimic_admissions['LOS_days'] <= 14), 'LOS_label'] = 2
-    mimic_admissions.loc[(mimic_admissions['LOS_days'] > 14) & (
-            mimic_admissions['LOS_days'] <= 21), 'LOS_label'] = 3
+            mimic_admissions['LOS_days'] <= 14), 'LOS_label'] = 3
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 14), 'LOS_label'] = 4
     mimic_admissions.LOS_label = mimic_admissions.LOS_label.astype(int)
 
