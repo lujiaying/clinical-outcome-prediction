@@ -38,15 +38,18 @@ def los_mimic(mimic_dir: str, save_dir: str, seed: int, admission_only: bool):
         <= 3: 0
         > 3 & <= 7: 1
         > 7 & <= 14: 2
-        >14: 3
+        >14 & <= 21: 3
+        >21: 4
+    """
     mimic_admissions.loc[mimic_admissions['LOS_days'] <= 3, 'LOS_label'] = 0
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 3) & (
             mimic_admissions['LOS_days'] <= 7), 'LOS_label'] = 1
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 7) & (
             mimic_admissions['LOS_days'] <= 14), 'LOS_label'] = 2
-    mimic_admissions.loc[(mimic_admissions['LOS_days'] > 14), 'LOS_label'] = 3
+    mimic_admissions.loc[(mimic_admissions['LOS_days'] > 14) & (
+            mimic_admissions['LOS_days'] <= 21), 'LOS_label'] = 3
+    mimic_admissions.loc[(mimic_admissions['LOS_days'] > 14), 'LOS_label'] = 4
     mimic_admissions.LOS_label = mimic_admissions.LOS_label.astype(int)
-    """
 
     """
     New version
@@ -60,7 +63,6 @@ def los_mimic(mimic_dir: str, save_dir: str, seed: int, admission_only: bool):
         > 10 & <= 14: 7
         > 14 & <= 21: 8
         > 21: 9
-    """
     mimic_admissions.loc[mimic_admissions['LOS_days'] <= 1, 'LOS_label'] = 0
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 1) & (
             mimic_admissions['LOS_days'] <= 2), 'LOS_label'] = 1
@@ -80,6 +82,7 @@ def los_mimic(mimic_dir: str, save_dir: str, seed: int, admission_only: bool):
             mimic_admissions['LOS_days'] <= 21), 'LOS_label'] = 8
     mimic_admissions.loc[(mimic_admissions['LOS_days'] > 21), 'LOS_label'] = 9
     mimic_admissions.LOS_label = mimic_admissions.LOS_label.astype(int)
+    """
 
     # Keeping the required variables
     mimic_admissions = mimic_admissions[["HADM_ID", "LOS_label", "HOSPITAL_EXPIRE_FLAG"]]
